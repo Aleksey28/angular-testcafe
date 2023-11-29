@@ -97,6 +97,8 @@ jobs:
             async function getDependabotAlerts () {
               const { data }  = await github.rest.dependabot.listAlertsForRepo({ owner, repo, state });
 
+              console.log(data.length)
+
               return data;
             }
 
