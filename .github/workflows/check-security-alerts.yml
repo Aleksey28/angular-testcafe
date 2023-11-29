@@ -118,7 +118,7 @@ jobs:
             async function isDependabotAlertOpened (alertNumber) {
               const alert = await getDependabotAlertInfo(alertNumber);
 
-              return alert?.state == states.open;
+              return alert.state == states.open;
             }
 
             async function getDependabotAlertInfo (alertNumber) {
