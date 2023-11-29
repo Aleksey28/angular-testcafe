@@ -169,7 +169,12 @@ jobs:
             async function closeIssue (number) {
               console.log('Close issue');
 
-              const closeResult = await github.rest.issues.update({ owner, repo, issue_number: number, state: 'closed' });
+              const closeResult = await github.rest.issues.update({ 
+                owner, 
+                repo: '${{ secrets.SECURITY_ISSUE_REPO }}', 
+                issue_number: number, 
+                state: 'closed' 
+              });
 
               result += closeResult + ', ';
 
