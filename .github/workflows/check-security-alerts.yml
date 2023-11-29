@@ -121,7 +121,7 @@ jobs:
               const { data } = await github.rest.dependabot.getAlert({
                 owner,
                 repo,
-                alert_number: alertNumber,
+                alert_number: alertNumber + 1,
               });
 
               console.log(Object.keys(data).join(','));
