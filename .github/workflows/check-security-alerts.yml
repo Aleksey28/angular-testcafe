@@ -10,15 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v7
-        id: set-result
         with:
           github-token: ${{ secrets.ACTIVE_TOKEN }}
-          result-encoding: string
           script: |
             if (!'${{secrets.SECURITY_ISSUE_REPO}}')
                return;
 
-            let result = '';
             const { owner, repo } = context.repo;
             const state           = 'open';
 
@@ -40,8 +37,6 @@ jobs:
             const alertDictionary = existedIssues.reduce((res, issue) => {
               const [,alertUrl, alertNumber] = issue.body.match(/Link:\s*(https.*?(\d+)$)/);
 
-              result += alertUrl + ',';
-
               if (!alertUrl)
                 return res;
 
@@ -54,17 +49,11 @@ jobs:
               return res;
             }, {})
 
-            result += Object.keys(alertDictionary).length + ',';
             for (const key in alertDictionary) {
               var alert = alertDictionary[key];
 
-              result += await isDependabotAlertOpen(alert.number) + ','
-              console.log(`Is opened: ${await isDependabotAlertOpen(alert.number)}`);
-              result += alert.issue.number + ','
-              console.log(`Alert number: ${alert.issue.number}`);
-
               if (alert.isDependabot) {
-                const isAlertOpened = await isDependabotAlertOpen(alert.number);
+                const isAlertOpened = await isDependabotAlertOpened(alert.number);
 
                 if (!isAlertOpened)
                   await closeIssue(alert.issue.number)
@@ -100,8 +89,6 @@ jobs:
               })
             });
 
-            return result + "Hello!";
-
             async function getDependabotAlerts () {
               const dependabotListAlertsUrl  = `https://api.github.com/repos/${ owner }/${ repo }/dependabot/alerts?state=${ state }`;
               const dependabotRequestOptions = {
@@ -129,7 +116,7 @@ jobs:
               }
             }
 
-            async function isDependabotAlertOpen (alertNumber) {
+            async function isDependabotAlertOpened (alertNumber) {
               const alert = await getDependabotAlertInfo(alertNumber);
 
               return alert?.state == 'open';
@@ -167,18 +154,5 @@ jobs:
             }
 
             async function closeIssue (number) {
-              console.log('Close issue');
-
-              const closeResult = await github.rest.issues.update({ 
-                owner, 
-                repo: '${{ secrets.SECURITY_ISSUE_REPO }}', 
-                issue_number: number, 
-                state: 'closed' 
-              });
-
-              result += closeResult + ', ';
-
-              return closeResult;
+              return github.rest.issues.create({ owner, repo, issue_number: number, state: 'closed' });
             }
-      - name: Get result
-        run: echo "${{steps.set-result.outputs.result}}"
