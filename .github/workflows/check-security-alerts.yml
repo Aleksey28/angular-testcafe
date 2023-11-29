@@ -39,15 +39,14 @@ jobs:
             });
 
             const alertDictionary = existedIssues.reduce((res, issue) => {
-              const [,alertUrl, alertNumber] = issue.body.match(/Link:\s*(https.*?(\d+)$)/);
+              const [,url, number] = issue.body.match(/Link:\s*(https.*?(\d+)$)/);
 
-              if (!alertUrl)
+              if (!url)
                 return res;
 
-              res[alertUrl] = {
-                issue,
-                number: alertNumber,
-                isDependabot: alertUrl.includes('dependabot'),
+              res[url] = {
+                issue, number,
+                isDependabot: url.includes('dependabot'),
               };
 
               return res;
@@ -109,7 +108,9 @@ jobs:
 
                 return data;
               } catch (e) {
-                console.log(e.message)
+                if (e.message.includes('no analysis found'))
+                  return [];
+
                 throw e;
               }
             }
@@ -117,7 +118,7 @@ jobs:
             async function isDependabotAlertOpened (alertNumber) {
               const alert = await getDependabotAlertInfo(alertNumber);
 
-              return alert.state == states.open;
+              return alert.state === states.open;
             }
 
             async function getDependabotAlertInfo (alertNumber) {
