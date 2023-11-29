@@ -97,8 +97,6 @@ jobs:
             async function getDependabotAlerts () {
               const { data }  = await github.rest.dependabot.listAlertsForRepo({ owner, repo, state });
 
-              console.log(data.length)
-
               return data;
             }
 
@@ -120,16 +118,13 @@ jobs:
             }
 
             async function getDependabotAlertInfo (alertNumber) {
-              const dependabotListAlertsUrl  = `https://api.github.com/repos/${ owner }/${ repo }/dependabot/alerts/${ alertNumber }`;
-              const dependabotRequestOptions = {
-                headers: { 'Authorization': 'Bearer ${{ secrets.ACTIVE_TOKEN }}' }
-              }
+              const { data } = await github.rest.dependabot.getAlert({
+                owner,
+                repo,
+                alert_number: alertNumber,
+              });
 
-              const response = await fetch(dependabotListAlertsUrl, dependabotRequestOptions);
-              const data     = await response.json();
-
-              if (data.state)
-                return data;
+              console.log(Object.keys(data).join(','));
 
               return null;
             }
