@@ -124,6 +124,7 @@ jobs:
                 alert_number: alertNumber + 1,
               });
 
+              console.log(typeof data);
               console.log(Object.keys(data).join(','));
 
               return null;
