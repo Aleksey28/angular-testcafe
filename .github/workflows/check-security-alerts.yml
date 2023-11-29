@@ -55,8 +55,13 @@ jobs:
               if (alert.isDependabot) {
                 const isAlertOpened = await isDependabotAlertOpened(alert.number);
 
-                if (!isAlertOpened)
-                  await closeIssue(alert.issue.number)
+                if (isAlertOpened)
+                  continue;
+                  
+                await closeIssue({owner, 
+                  repo:         '${{ secrets.SECURITY_ISSUE_REPO }}',
+                  issue_number: alert.issue.number
+                })
               }
             }
 
@@ -153,11 +158,8 @@ jobs:
               return github.rest.issues.create({ owner, repo, title, body, labels });
             }
 
-            async function closeIssue (number) {
-              return github.rest.issues.update({ 
-                owner, 
-                repo: '${{ secrets.SECURITY_ISSUE_REPO }}', 
-                issue_number: number, 
-                state: 'closed' 
-              });
+            async function closeIssue ({ owner, repo, issue_number}) {
+              const state = 'closed';
+
+              return github.rest.issues.update({ owner, repo, issue_number, state });
             }
