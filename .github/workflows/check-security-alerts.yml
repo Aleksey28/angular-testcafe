@@ -102,7 +102,6 @@ jobs:
             }
 
             async function getCodeqlAlerts () {
-              // NOTE: When CodeQL is turned of it throws error
               try {
                 const { data }  = await github.rest.codeScanning.listAlertsForRepo({ owner, repo, state: states.open });
 
@@ -139,6 +138,7 @@ jobs:
             }
 
             async function createIssue ({labels, originRepo, summary, description, link, package = ''}) {
+              console.log(owner);
               const title = `[${originRepo}] ${summary}`;
               const body  = ''
                 + `#### Repository: \`${ originRepo }\`\n`
@@ -154,10 +154,11 @@ jobs:
             }
 
             async function closeIssue (issueNumber) {
-                return github.rest.issues.update({ 
-                  owner, 
-                  repo:         '${{ secrets.SECURITY_ISSUE_REPO }}', 
-                  issue_number: issueNumber, 
-                  state:        states.closed 
-                });
+              console.log(owner);
+              return github.rest.issues.update({ 
+                owner, 
+                repo:         '${{ secrets.SECURITY_ISSUE_REPO }}', 
+                issue_number: issueNumber, 
+                state:        states.closed 
+              });
             }
