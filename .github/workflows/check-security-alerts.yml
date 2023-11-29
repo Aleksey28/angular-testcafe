@@ -48,6 +48,7 @@ jobs:
               res[alertUrl] = {
                 issue,
                 number: alertNumber,
+                isDependabot: alertUrl.includes('dependabot'),
               };
 
               return res;
@@ -57,13 +58,17 @@ jobs:
             for (const key in alertDictionary) {
               var alert = alertDictionary[key];
 
-              result += isDependabotAlertOpen(alert.number) + ','
-              console.log(`Is opened: ${isDependabotAlertOpen(alert.number)}`);
+              result += await isDependabotAlertOpen(alert.number) + ','
+              console.log(`Is opened: ${await isDependabotAlertOpen(alert.number)}`);
               result += alert.issue.number + ','
               console.log(`Alert number: ${alert.issue.number}`);
 
-              if (!isDependabotAlertOpen(alert.number))
-                await closeIssue(alert.issue.number)
+              if (alert.isDependabot) {
+                const isAlertOpened = await isDependabotAlertOpen(alert.number);
+
+                if (!isAlertOpened)
+                  await closeIssue(alert.issue.number)
+              }
             }
 
             dependabotAlerts.forEach(alert => {
