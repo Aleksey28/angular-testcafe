@@ -110,7 +110,7 @@ jobs:
                 return data;
               } catch (e) {
                 console.log(e.message)
-                return [];
+                throw e;
               }
             }
 
@@ -129,7 +129,7 @@ jobs:
                 if (e.message.includes('No alert found for alert number'))
                   return {};
 
-                return e;
+                throw e;
               }
             }
 
