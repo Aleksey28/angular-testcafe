@@ -43,10 +43,12 @@ jobs:
               return res;
             }, {})
 
-            alertDictionary.forEach(alert => {
+            for (const key in alertDictionary) {
+              var alert = alertDictionary[key];
+
               if (!isDependabotAlertOpen(alert.number))
                 closeIssue(alert.issue.number)
-            })
+            }
 
             dependabotAlerts.forEach(alert => {
               if (!needCreateIssue(alert))
