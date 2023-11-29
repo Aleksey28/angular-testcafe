@@ -35,6 +35,8 @@ jobs:
             const alertDictionary = existedIssues.reduce((res, issue) => {
               const [,alertUrl, alertNumber] = issue.body.match(/Link:\s*(https.*?(\d+)$)/);
 
+              result += alertUrl + ',';
+
               if (!alertUrl)
                 return res;
 
@@ -46,7 +48,7 @@ jobs:
               return res;
             }, {})
 
-            result += Object.keys(alertDictionary).length;
+            result += Object.keys(alertDictionary).length + ',';
             for (const key in alertDictionary) {
               var alert = alertDictionary[key];
 
