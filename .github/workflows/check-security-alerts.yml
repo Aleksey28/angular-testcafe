@@ -30,7 +30,12 @@ jobs:
 
             const dependabotAlerts      = await getDependabotAlerts();
             const codeqlAlerts          = await getCodeqlAlerts();
-            const {data: existedIssues} = await github.rest.issues.listForRepo({ owner, repo, labels: [labels.security], state });
+            const {data: existedIssues} = await github.rest.issues.listForRepo({ 
+              owner, 
+              repo:   '${{ secrets.SECURITY_ISSUE_REPO }}', 
+              labels: [labels.security], 
+              state 
+            });
 
             const alertDictionary = existedIssues.reduce((res, issue) => {
               const [,alertUrl, alertNumber] = issue.body.match(/Link:\s*(https.*?(\d+)$)/);
