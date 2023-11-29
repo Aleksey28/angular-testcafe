@@ -154,5 +154,10 @@ jobs:
             }
 
             async function closeIssue (number) {
-              return github.rest.issues.create({ owner, repo, issue_number: number, state: 'closed' });
+              return github.rest.issues.update({ 
+                owner, 
+                repo: '${{ secrets.SECURITY_ISSUE_REPO }}', 
+                issue_number: number, 
+                state: 'closed' 
+              });
             }
