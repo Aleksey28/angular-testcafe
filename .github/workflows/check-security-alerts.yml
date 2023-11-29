@@ -43,7 +43,7 @@ jobs:
                 number: alertNumber,
               };
 
-              return res;
+              return res + "Hello!";
             }, {})
 
             for (const key in alertDictionary) {
