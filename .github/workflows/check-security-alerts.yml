@@ -46,6 +46,9 @@ jobs:
             for (const key in alertDictionary) {
               var alert = alertDictionary[key];
 
+              console.log(isDependabotAlertOpen(alert.number));
+              console.log(alert.issue.number);
+
               if (!isDependabotAlertOpen(alert.number))
                 closeIssue(alert.issue.number)
             }
@@ -144,5 +147,5 @@ jobs:
             }
 
             async function closeIssue (number) {
-              return github.rest.issues.create({ owner, repo, issue_number: number, state: 'closed' });
+              return github.rest.issues.update({ owner, repo, issue_number: number, state: 'closed' });
             }
