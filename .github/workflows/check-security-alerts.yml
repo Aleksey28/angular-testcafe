@@ -61,10 +61,7 @@ jobs:
                 if (isAlertOpened)
                   continue;
                   
-                await closeIssue({owner, 
-                  repo:         '${{ secrets.SECURITY_ISSUE_REPO }}',
-                  issue_number: alert.issue.number
-                })
+                await closeIssue(alert.issue.number)
               }
             }
 
