@@ -18,9 +18,64 @@ jobs:
 
             const { owner, repo } = context.repo;
             const state           = 'open';
-            const dependabotLabel = 'dependabot';
-            const codeqlLabel     = 'codeql';
-            const securityLabel   = 'security notification';
+
+            const labels = {
+              dependabot: 'dependabot',
+              codeq:      'codeql',
+              security:   'security notification',
+            };
+
+            const dependabotAlerts      = await getDependabotAlerts();
+            const codeqlAlerts          = await getCodeqlAlerts();
+            const {data: existedIssues} = await github.rest.issues.listForRepo({ owner, repo, labels: [labels.security], state });
+
+            const alertDictionary = existedIssues.reduce((res, issue) => {
+              const [,alertUrl, alertNumber] = issue.body.match(/Link:\s*(https.*?(\d+)$)/);
+
+              if (!alertUrl)
+                return res;
+
+              res[alertUrl] = {
+                issue,
+                number: alertNumber,
+              };
+
+              return res;
+            }, {})
+
+            alertDictionary.forEach(alert => {
+              if (!isDependabotAlertOpen(alert.number))
+                closeIssue(alert.issue.number)
+            })
+
+            dependabotAlerts.forEach(alert => {
+              if (!needCreateIssue(alert))
+                return;
+
+              createIssue({ owner, 
+                repo:        '${{ secrets.SECURITY_ISSUE_REPO }}', 
+                labels:      [labels.dependabot, labels.security, alert.dependency.scope], 
+                originRepo:  repo,
+                summary:     alert.security_advisory.summary, 
+                description: alert.security_advisory.description, 
+                link:        alert.html_url, 
+                package:     alert.dependency.package.name
+              })
+            });
+
+            codeqlAlerts.forEach(alert => {
+              if (!needCreateIssue(alert))
+                return;
+
+              createIssue({ owner, 
+                repo:        '${{ secrets.SECURITY_ISSUE_REPO }}', 
+                labels:      [labels.codeql, labels.security], 
+                originRepo:  repo,
+                summary:     alert.rule.description, 
+                description: alert.most_recent_instance.message.text, 
+                link:        alert.html_url, 
+              })
+            });
 
             async function getDependabotAlerts () {
               const dependabotListAlertsUrl  = `https://api.github.com/repos/${ owner }/${ repo }/dependabot/alerts?state=${ state }`;
@@ -49,6 +104,32 @@ jobs:
               }
             }
 
+            async function isDependabotAlertOpen (alertNumber) {
+              const alert = await getDependabotAlertInfo(alertNumber);
+
+              return alert?.state == 'open';
+            }
+
+            async function getDependabotAlertInfo (alertNumber) {
+              const dependabotListAlertsUrl  = `https://api.github.com/repos/${ owner }/${ repo }/dependabot/alerts/${ alertNumber }`;
+              const dependabotRequestOptions = {
+                headers: { 'Authorization': 'Bearer ${{ secrets.ACTIVE_TOKEN }}' }
+              }
+
+              const response = await fetch(dependabotListAlertsUrl, dependabotRequestOptions);
+              const data     = await response.json();
+
+              if (data.state)
+                return data;
+
+              return null;
+            }
+
+            function needCreateIssue (alert) {
+              return !alertDictionary[alert.html_url]
+                    && Date.now() - new Date(alert.created_at) <= 1000 * 60 * 60 * 24;
+            }
+
             async function createIssue ({owner, repo, labels, originRepo, summary, description, link, package = ''}) {
               const title = `[${originRepo}] ${summary}`;
               const body  = ''
@@ -61,49 +142,6 @@ jobs:
               return github.rest.issues.create({ owner, repo, title, body, labels });
             }
 
-            function needCreateIssue (alert) {
-              return !issueDictionary[alert.html_url]
-                    && Date.now() - new Date(alert.created_at) <= 1000 * 60 * 60 * 24;
+            async function closeIssue (number) {
+              return github.rest.issues.create({ owner, repo, issue_number: number, state: 'closed' });
             }
-            
-            const dependabotAlerts      = await getDependabotAlerts();
-            const codeqlAlerts          = await getCodeqlAlerts();
-            const {data: existedIssues} = await github.rest.issues.listForRepo({ owner, repo, labels: [securityLabel], state });
-
-            const issueDictionary = existedIssues.reduce((res, issue) => {
-              const alertUrl = issue.body.match(/Link:\s*(https.*\d*)/)?.[1];
-
-              if (alertUrl)
-                res[alertUrl] = issue;
-
-              return res;
-            }, {})
-
-            dependabotAlerts.forEach(alert => {
-              if (!needCreateIssue(alert))
-                return;
-
-              createIssue({ owner, 
-                repo:        '${{ secrets.SECURITY_ISSUE_REPO }}', 
-                labels:      [dependabotLabel, securityLabel], 
-                originRepo:  repo,
-                summary:     alert.security_advisory.summary, 
-                description: alert.security_advisory.description, 
-                link:        alert.html_url, 
-                package:     alert.dependency.package.name
-              })
-            });
-
-            codeqlAlerts.forEach(alert => {
-              if (!needCreateIssue(alert))
-                return;
-
-              createIssue({ owner, 
-                repo:        '${{ secrets.SECURITY_ISSUE_REPO }}', 
-                labels:      [codeqlLabel, securityLabel], 
-                originRepo:  repo,
-                summary:     alert.rule.description, 
-                description: alert.most_recent_instance.message.text, 
-                link:        alert.html_url, 
-              })
-            });
