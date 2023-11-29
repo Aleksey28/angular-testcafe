@@ -95,19 +95,9 @@ jobs:
             });
 
             async function getDependabotAlerts () {
-              const dependabotListAlertsUrl  = `https://api.github.com/repos/${ owner }/${ repo }/dependabot/alerts?state=${ state }`;
-              const dependabotRequestOptions = {
-                headers: { 'Authorization': 'Bearer ${{ secrets.ACTIVE_TOKEN }}' }
-              }
+              const { data }  = await github.rest.dependabot.listAlertsForRepo({ owner, repo, state });
 
-              const response = await fetch(dependabotListAlertsUrl, dependabotRequestOptions);
-              const data     = await response.json();
-
-              // If data isn't arry somethig goes wrong
-              if (Array.isArray(data))
-                return data;
-
-              return [];
+              return data;
             }
 
             async function getCodeqlAlerts () {
