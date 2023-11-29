@@ -128,6 +128,7 @@ jobs:
 
                 return data;
               } catch (e) {
+                console.log(e.message);
                 if (e.message.Includes('No alert found for alert number'))
                   return {};
 
