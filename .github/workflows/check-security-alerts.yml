@@ -73,8 +73,7 @@ jobs:
               if (!needCreateIssue(alert))
                 return;
 
-              createIssue({ owner, 
-                repo:        '${{ secrets.SECURITY_ISSUE_REPO }}', 
+              createIssue({
                 labels:      [labels.dependabot, labels.security, alert.dependency.scope], 
                 originRepo:  repo,
                 summary:     alert.security_advisory.summary, 
@@ -88,8 +87,7 @@ jobs:
               if (!needCreateIssue(alert))
                 return;
 
-              createIssue({ owner, 
-                repo:        '${{ secrets.SECURITY_ISSUE_REPO }}', 
+              createIssue({
                 labels:      [labels.codeql, labels.security], 
                 originRepo:  repo,
                 summary:     alert.rule.description, 
@@ -110,7 +108,8 @@ jobs:
                 const { data }  = await github.rest.codeScanning.listAlertsForRepo({ owner, repo, state: states.open });
 
                 return data;
-              } catch (_) {
+              } catch (e) {
+                console.log(e.message)
                 return [];
               }
             }
@@ -122,13 +121,11 @@ jobs:
             }
 
             async function getDependabotAlertInfo (alertNumber) {
-              // NOTE: For keys when an alert doesn't exist for the passed number.
               try {
-                const { data } = await github.rest.dependabot.getAlert({ owner, repo, alert_number: alertNumber + 1 });
+                const { data } = await github.rest.dependabot.getAlert({ owner, repo, alert_number: alertNumber });
 
                 return data;
               } catch (e) {
-                console.log(e.message);
                 if (e.message.includes('No alert found for alert number'))
                   return {};
 
@@ -140,7 +137,7 @@ jobs:
               return !alertDictionary[alert.html_url];
             }
 
-            async function createIssue ({owner, repo, labels, originRepo, summary, description, link, package = ''}) {
+            async function createIssue ({labels, originRepo, summary, description, link, package = ''}) {
               const title = `[${originRepo}] ${summary}`;
               const body  = ''
                 + `#### Repository: \`${ originRepo }\`\n`
@@ -149,11 +146,17 @@ jobs:
                 + `${ description }\n`
                 + `#### Link: ${ link }`
 
-              return github.rest.issues.create({ owner, repo, title, body, labels });
+              return github.rest.issues.create({ 
+                owner, title, body, labels,
+                repo: '${{ secrets.SECURITY_ISSUE_REPO }}',
+              });
             }
 
-            async function closeIssue ({ owner, repo, issue_number}) {
-              const state = states.closed;
-
-              return github.rest.issues.update({ owner, repo, issue_number, state });
+            async function closeIssue (issueNumber) {
+                return github.rest.issues.update({ 
+                  owner, 
+                  repo:         '${{ secrets.SECURITY_ISSUE_REPO }}', 
+                  issue_number: issueNumber, 
+                  state:        states.closed 
+                });
             }
