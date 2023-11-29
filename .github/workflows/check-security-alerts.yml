@@ -16,6 +16,7 @@ jobs:
             if (!'${{secrets.SECURITY_ISSUE_REPO}}')
                return;
 
+            let res = '';
             const { owner, repo } = context.repo;
             const state           = 'open';
 
@@ -46,11 +47,13 @@ jobs:
             for (const key in alertDictionary) {
               var alert = alertDictionary[key];
 
-              console.log(isDependabotAlertOpen(alert.number));
-              console.log(alert.issue.number);
+              res += isDependabotAlertOpen(alert.number) + ','
+              console.log(`Is opened: ${isDependabotAlertOpen(alert.number)}`);
+              res += alert.issue.number + ','
+              console.log(`Alert number: ${alert.issue.number}`);
 
               if (!isDependabotAlertOpen(alert.number))
-                closeIssue(alert.issue.number)
+                await closeIssue(alert.issue.number)
             }
 
             dependabotAlerts.forEach(alert => {
@@ -81,6 +84,8 @@ jobs:
                 link:        alert.html_url, 
               })
             });
+
+            return res;
 
             async function getDependabotAlerts () {
               const dependabotListAlertsUrl  = `https://api.github.com/repos/${ owner }/${ repo }/dependabot/alerts?state=${ state }`;
@@ -147,5 +152,11 @@ jobs:
             }
 
             async function closeIssue (number) {
-              return github.rest.issues.update({ owner, repo, issue_number: number, state: 'closed' });
+              console.log('Close issue');
+
+              const closeResult = await github.rest.issues.update({ owner, repo, issue_number: number, state: 'closed' });
+
+              res += closeResult + ', ';
+
+              return closeResult;
             }
