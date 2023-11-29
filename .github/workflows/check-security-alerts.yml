@@ -17,7 +17,11 @@ jobs:
                return;
 
             const { owner, repo } = context.repo;
-            const state           = 'open';
+
+            const states = {
+              open:   'open',
+              closed: 'closed',
+            }
 
             const labels = {
               dependabot: 'dependabot',
@@ -31,7 +35,7 @@ jobs:
               owner, 
               repo:   '${{ secrets.SECURITY_ISSUE_REPO }}', 
               labels: [labels.security], 
-              state 
+              state:  states.open, 
             });
 
             const alertDictionary = existedIssues.reduce((res, issue) => {
@@ -95,15 +99,15 @@ jobs:
             });
 
             async function getDependabotAlerts () {
-              const { data }  = await github.rest.dependabot.listAlertsForRepo({ owner, repo, state });
+              const { data }  = await github.rest.dependabot.listAlertsForRepo({ owner, repo, state: states.open });
 
               return data;
             }
 
             async function getCodeqlAlerts () {
-              // When CodeQL is turned of it throws error
+              // NOTE: When CodeQL is turned of it throws error
               try {
-                const { data }  = await github.rest.codeScanning.listAlertsForRepo({ owner, repo, state });
+                const { data }  = await github.rest.codeScanning.listAlertsForRepo({ owner, repo, state: states.open });
 
                 return data;
               } catch (_) {
@@ -114,20 +118,21 @@ jobs:
             async function isDependabotAlertOpened (alertNumber) {
               const alert = await getDependabotAlertInfo(alertNumber);
 
-              return alert?.state == 'open';
+              return alert?.state == states.open;
             }
 
             async function getDependabotAlertInfo (alertNumber) {
-              const { data } = await github.rest.dependabot.getAlert({
-                owner,
-                repo,
-                alert_number: alertNumber + 1,
-              });
+              // NOTE: For keys when an alert doesn't exist for the passed number.
+              try {
+                const { data } = await github.rest.dependabot.getAlert({ owner, repo, alert_number: alertNumber + 1 });
 
-              console.log(typeof data);
-              console.log(Object.keys(data).join(','));
+                return data;
+              } catch (e) {
+                if (e.message.Includes('No alert found for alert number'))
+                  return {};
 
-              return null;
+                return e;
+              }
             }
 
             function needCreateIssue (alert) {
@@ -147,7 +152,7 @@ jobs:
             }
 
             async function closeIssue ({ owner, repo, issue_number}) {
-              const state = 'closed';
+              const state = states.closed;
 
               return github.rest.issues.update({ owner, repo, issue_number, state });
             }
