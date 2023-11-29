@@ -46,6 +46,7 @@ jobs:
               return res;
             }, {})
 
+            result += Object.keys(alertDictionary).length;
             for (const key in alertDictionary) {
               var alert = alertDictionary[key];
 
